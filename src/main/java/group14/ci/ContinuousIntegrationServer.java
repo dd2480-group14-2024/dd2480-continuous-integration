@@ -104,7 +104,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @return The path to the temporary directory where the repository 
      * has been cloned to if the operation is successful or null if the operation failed. 
      */
-    private Path cloneRepository(String repoUrl, String branch) {
+    public Path cloneRepository(String repoUrl, String branch) {
         try {
             Path repoPath = Files.createTempDirectory("ci-repo-");
             Git.cloneRepository()
@@ -133,7 +133,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @param repoPath The path to the directory containing the Maven project to be compiled.
      * @return true if the compilation is successful, false otherwise.
      */
-    private boolean compileProject(Path repoPath) {
+    public boolean compileProject(Path repoPath) {
         int exitCode = 0;
         try {
             ProcessBuilder builder = new ProcessBuilder();
