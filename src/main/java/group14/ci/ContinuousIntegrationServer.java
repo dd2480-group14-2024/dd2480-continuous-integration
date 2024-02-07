@@ -48,7 +48,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
     /**
      * this gets run every time github sends a request to our server. I.E. when
-     * someone has made a commit to the remote repository. 
+     * someone has made a commit to the remote repository. TODO: javadoc
      */
     @Override
     public void handle(String target,
@@ -59,18 +59,21 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         System.out.println("target: " + target);
 
         try {
+            // Clone
             JSONObject payload = new JSONObject(new JSONTokener(request.getInputStream()));
             String repoUrl = payload.getJSONObject("repository").getString("clone_url");
             String branch = payload.getString("ref");
             System.out.println(repoUrl + " " + branch);
             Path repoPath = cloneRepository(repoUrl, branch);
             System.out.println(repoPath.toString());
+
+            // Compile
+            boolean compileSuccessful = compileProject(repoPath);
+            System.out.println(compileSuccessful);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        compileProject();
-        runTests();
         
         response.setContentType("text/html;charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
@@ -119,8 +122,25 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     /**
      * TODO
      */
-    private boolean compileProject() {
-        return false;
+    private boolean compileProject(Path repoPath) {
+        int exitCode = 0;
+        try {
+            ProcessBuilder builder = new ProcessBuilder();
+            builder.command("sh", "-c", "mvn clean install");
+            builder.directory(repoPath.toFile());
+            
+            Process process = builder.start();
+            exitCode = process.waitFor();
+    
+            if (exitCode != 0) {
+                System.err.println("Maven build failed with exit code: " + exitCode);
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
 
