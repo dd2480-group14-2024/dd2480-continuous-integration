@@ -105,7 +105,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * has been cloned to if the operation is successful or null if the operation failed. 
      */
     private Path cloneRepository(String repoUrl, String branch) {
-        System.out.println("In clone");
         try {
             Path repoPath = Files.createTempDirectory("ci-repo-");
             Git.cloneRepository()
