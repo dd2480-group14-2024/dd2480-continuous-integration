@@ -58,18 +58,23 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
         System.out.println("target: " + target);
 
+        // TODO: maybe some check to see if the incoming request is from github webhooks
+
         try {
             // Clone
             JSONObject payload = new JSONObject(new JSONTokener(request.getInputStream()));
             String repoUrl = payload.getJSONObject("repository").getString("clone_url");
             String branch = payload.getString("ref");
-            System.out.println(repoUrl + " " + branch);
+            System.out.println("GitHub repo: " + repoUrl + " " + branch);
             Path repoPath = cloneRepository(repoUrl, branch);
-            System.out.println(repoPath.toString());
+            System.out.println("Temp directory: " + repoPath.toString());
 
             // Compile
             boolean compileSuccessful = compileProject(repoPath);
-            System.out.println(compileSuccessful);
+            System.out.println("compilation status: " + compileSuccessful);
+
+            // Tests
+            // TODO
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -120,21 +125,26 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
 
     /**
-     * TODO
+     * compileProject compiles a Maven project located in the specified repository directory.
+     * This method uses the Maven build tool to execute the "clean install" command.
+     * The compilation is performed using a platform-independent approach, 
+     * allowing compatibility with both Windows and Unix-like operating systems.
+     * 
+     * @param repoPath The path to the directory containing the Maven project to be compiled.
+     * @return true if the compilation is successful, false otherwise.
      */
     private boolean compileProject(Path repoPath) {
         int exitCode = 0;
         try {
             ProcessBuilder builder = new ProcessBuilder();
-            builder.command("sh", "-c", "mvn clean install");
-            builder.directory(repoPath.toFile());
-
+            
             String os = System.getProperty("os.name").toLowerCase();
             if (os.contains("win")) {
                 builder.command("cmd", "/c", "mvn clean install");
             } else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
                 builder.command("sh", "-c", "mvn clean install");
             }
+            builder.directory(repoPath.toFile());
             
             Process process = builder.start();
             exitCode = process.waitFor();
@@ -144,7 +154,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 return false;
             }
             return true;
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
             return false;
         }
