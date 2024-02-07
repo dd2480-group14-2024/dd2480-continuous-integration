@@ -128,6 +128,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("sh", "-c", "mvn clean install");
             builder.directory(repoPath.toFile());
+
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("win")) {
+                builder.command("cmd", "/c", "mvn clean install");
+            } else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+                builder.command("sh", "-c", "mvn clean install");
+            }
             
             Process process = builder.start();
             exitCode = process.waitFor();
