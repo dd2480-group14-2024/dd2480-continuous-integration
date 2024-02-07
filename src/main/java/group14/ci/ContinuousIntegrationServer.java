@@ -75,8 +75,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             System.out.println("compilation status: " + compileSuccessful);
 
             // Tests
-            // TODO: mvn clean install which is run in compileProject
-            // compiles the projects and runs tests by default so idk if this is necessary. 
+            // TODO:
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -142,9 +141,9 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             
             String os = System.getProperty("os.name").toLowerCase();
             if (os.contains("win")) {
-                builder.command("cmd", "/c", "mvn clean install");
+                builder.command("cmd", "/c", "mvn compile");
             } else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
-                builder.command("sh", "-c", "mvn clean install");
+                builder.command("sh", "-c", "mvn compile");
             }
             builder.directory(repoPath.toFile());
             
