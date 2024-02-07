@@ -7,6 +7,7 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -20,6 +21,8 @@ import org.json.JSONTokener;
 public class ContinuousIntegrationServer extends AbstractHandler {
 
     private static final int PORT = 8080;
+
+
 
     /**
      * The main entry point for the Continuous Integration Server application. This
@@ -41,6 +44,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
     }
 
+
+
     /**
      * this gets run every time github sends a request to our server. I.E. when
      * someone has made a commit to the remote repository. 
@@ -51,13 +56,21 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                        HttpServletRequest request,
                        HttpServletResponse response) {
 
-        System.out.println(target);
+        System.out.println("target: " + target);
 
-        cloneRepository();
+        try {
+            JSONObject payload = new JSONObject(new JSONTokener(request.getInputStream()));
+            String repoUrl = payload.getJSONObject("repository").getString("clone_url");
+            String branch = payload.getString("ref");
+            System.out.println(repoUrl + " " + branch);
+            Path repoPath = cloneRepository(repoUrl, branch);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         compileProject();
         runTests();
-
-        // TODO: send something back to github i guess.
+        
         response.setContentType("text/html;charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
@@ -68,12 +81,38 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
     }
 
+
+
     /**
-     * TODO
+     * cloneRepository clones a specific branch of a repository into a 
+     * temporary directory and returns the path to the temporary directory.
+     * 
+     * @param repoUrl The URL to the repository on github.
+     *      Example: https://github.com/lvainio/dd2480-continuous-integration.git
+     * @param branch The branch to clone.
+     *      Example: refs/heads/feat/issue-1/add-some-functionality
+     * @return The path to the temporary directory where the repository 
+     * has been cloned to if the operation is successful or null if the operation failed. 
      */
-    private boolean cloneRepository() {
-        return false;
+    private Path cloneRepository(String repoUrl, String branch) {
+        try {
+            Path repoPath = Files.createTempDirectory("ci-repo-");
+            Git.cloneRepository()
+                    .setURI(repoUrl)
+                    .setDirectory(repoPath.toFile())
+                    .setBranchesToClone( Arrays.asList( branch ) )
+                    .setBranch( branch )
+                    .call();
+            return repoPath;
+        } catch (GitAPIException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+        return null;
     }
+
+
 
     /**
      * TODO
@@ -81,6 +120,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     private boolean compileProject() {
         return false;
     }
+
+
 
     /**
      * TODO
