@@ -59,6 +59,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         System.out.println("target: " + target);
 
         // TODO: maybe some check to see if the incoming request is from github webhooks
+        // To avoid favicon http requests for example.
 
         try {
             // Clone
@@ -74,7 +75,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             System.out.println("compilation status: " + compileSuccessful);
 
             // Tests
-            // TODO
+            // TODO: mvn clean install which is run in compileProject
+            // compiles the projects and runs tests by default so idk if this is necessary. 
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -158,14 +160,5 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             e.printStackTrace();
             return false;
         }
-    }
-
-
-
-    /**
-     * TODO
-     */
-    private boolean runTests() {
-        return false;
     }
 }
