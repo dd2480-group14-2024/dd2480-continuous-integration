@@ -7,6 +7,7 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -20,6 +21,8 @@ import org.json.JSONTokener;
 public class ContinuousIntegrationServer extends AbstractHandler {
 
     private static final int PORT = 8080;
+
+
 
     /**
      * The main entry point for the Continuous Integration Server application. This
@@ -41,9 +44,11 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
     }
 
+
+
     /**
      * this gets run every time github sends a request to our server. I.E. when
-     * someone has made a commit to the remote repository. 
+     * someone has made a commit to the remote repository. TODO: javadoc
      */
     @Override
     public void handle(String target,
@@ -51,13 +56,31 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                        HttpServletRequest request,
                        HttpServletResponse response) {
 
-        System.out.println(target);
+        System.out.println("target: " + target);
 
-        cloneRepository();
-        compileProject();
-        runTests();
+        // TODO: maybe some check to see if the incoming request is from github webhooks
+        // To avoid favicon http requests for example.
 
-        // TODO: send something back to github i guess.
+        try {
+            // Clone
+            JSONObject payload = new JSONObject(new JSONTokener(request.getInputStream()));
+            String repoUrl = payload.getJSONObject("repository").getString("clone_url");
+            String branch = payload.getString("ref");
+            System.out.println("GitHub repo: " + repoUrl + " " + branch);
+            Path repoPath = cloneRepository(repoUrl, branch);
+            System.out.println("Temp directory: " + repoPath.toString());
+
+            // Compile
+            boolean compileSuccessful = compileProject(repoPath);
+            System.out.println("compilation status: " + compileSuccessful);
+
+            // Tests
+            // TODO:
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         response.setContentType("text/html;charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
@@ -68,24 +91,72 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
     }
 
-    /**
-     * TODO
-     */
-    private boolean cloneRepository() {
-        return false;
-    }
+
 
     /**
-     * TODO
+     * cloneRepository clones a specific branch of a repository into a 
+     * temporary directory and returns the path to the temporary directory.
+     * 
+     * @param repoUrl The URL to the repository on github.
+     *      Example: https://github.com/lvainio/dd2480-continuous-integration.git
+     * @param branch The branch to clone.
+     *      Example: refs/heads/feat/issue-1/add-some-functionality
+     * @return The path to the temporary directory where the repository 
+     * has been cloned to if the operation is successful or null if the operation failed. 
      */
-    private boolean compileProject() {
-        return false;
+    public Path cloneRepository(String repoUrl, String branch) {
+        try {
+            Path repoPath = Files.createTempDirectory("ci-repo-");
+            Git.cloneRepository()
+                    .setURI(repoUrl)
+                    .setDirectory(repoPath.toFile())
+                    .setBranchesToClone( Arrays.asList( branch ) )
+                    .setBranch( branch )
+                    .call();
+            return repoPath;
+        } catch (GitAPIException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+        return null;
     }
 
+
+
     /**
-     * TODO
+     * compileProject compiles a Maven project located in the specified repository directory.
+     * This method uses the Maven build tool to execute the "clean install" command.
+     * The compilation is performed using a platform-independent approach, 
+     * allowing compatibility with both Windows and Unix-like operating systems.
+     * 
+     * @param repoPath The path to the directory containing the Maven project to be compiled.
+     * @return true if the compilation is successful, false otherwise.
      */
-    private boolean runTests() {
-        return false;
+    public boolean compileProject(Path repoPath) {
+        int exitCode = 0;
+        try {
+            ProcessBuilder builder = new ProcessBuilder();
+            
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("win")) {
+                builder.command("cmd", "/c", "mvn compile");
+            } else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+                builder.command("sh", "-c", "mvn compile");
+            }
+            builder.directory(repoPath.toFile());
+            
+            Process process = builder.start();
+            exitCode = process.waitFor();
+    
+            if (exitCode != 0) {
+                System.err.println("Maven build failed with exit code: " + exitCode);
+                return false;
+            }
+            return true;
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
