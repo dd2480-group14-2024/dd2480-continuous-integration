@@ -5,6 +5,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -21,17 +23,17 @@ import org.json.JSONTokener;
 public class ContinuousIntegrationServer extends AbstractHandler {
 
     private static final int PORT = 8080;
-
-
+    private static final String GITHUB_TOKEN = "";
 
     /**
      * The main entry point for the Continuous Integration Server application. This
-     * method initializes and starts a Jetty server with a ContinuousIntegrationServer
-     * handler. 
+     * method initializes and starts a Jetty server with a
+     * ContinuousIntegrationServer
+     * handler.
      *
      * @param args Command-line arguments (unused).
      */
-    public static void main(String[] args)  {
+    public static void main(String[] args) {
         Server server = new Server(PORT);
         server.setHandler(new ContinuousIntegrationServer());
         try {
@@ -44,17 +46,15 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
     }
 
-
-
     /**
      * this gets run every time github sends a request to our server. I.E. when
      * someone has made a commit to the remote repository. TODO: javadoc
      */
     @Override
     public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) {
+            Request baseRequest,
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
         System.out.println("target: " + target);
 
@@ -66,6 +66,9 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             JSONObject payload = new JSONObject(new JSONTokener(request.getInputStream()));
             String repoUrl = payload.getJSONObject("repository").getString("clone_url");
             String branch = payload.getString("ref");
+            String author = payload.getJSONObject("pusher").get("name").toString();
+            String commitId = payload.getJSONObject("head_commit").get("id").toString();
+
             System.out.println("GitHub repo: " + repoUrl + " " + branch);
             Path repoPath = cloneRepository(repoUrl, branch);
             System.out.println("Temp directory: " + repoPath.toString());
@@ -75,12 +78,14 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             System.out.println("compilation status: " + compileSuccessful);
 
             // Tests
-            // TODO:
+            boolean testsSuccessful = true;
 
+            // Notify
+            notifyGitHubCommitStatus(repoUrl, author, branch, commitId, compileSuccessful, testsSuccessful);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         response.setContentType("text/html;charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
@@ -91,18 +96,18 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
     }
 
-
-
     /**
-     * cloneRepository clones a specific branch of a repository into a 
+     * cloneRepository clones a specific branch of a repository into a
      * temporary directory and returns the path to the temporary directory.
      * 
      * @param repoUrl The URL to the repository on github.
-     *      Example: https://github.com/lvainio/dd2480-continuous-integration.git
-     * @param branch The branch to clone.
-     *      Example: refs/heads/feat/issue-1/add-some-functionality
-     * @return The path to the temporary directory where the repository 
-     * has been cloned to if the operation is successful or null if the operation failed. 
+     *                Example:
+     *                https://github.com/lvainio/dd2480-continuous-integration.git
+     * @param branch  The branch to clone.
+     *                Example: refs/heads/feat/issue-1/add-some-functionality
+     * @return The path to the temporary directory where the repository
+     *         has been cloned to if the operation is successful or null if the
+     *         operation failed.
      */
     public Path cloneRepository(String repoUrl, String branch) {
         try {
@@ -110,34 +115,34 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             Git.cloneRepository()
                     .setURI(repoUrl)
                     .setDirectory(repoPath.toFile())
-                    .setBranchesToClone( Arrays.asList( branch ) )
-                    .setBranch( branch )
+                    .setBranchesToClone(Arrays.asList(branch))
+                    .setBranch(branch)
                     .call();
             return repoPath;
         } catch (GitAPIException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } 
+        }
         return null;
     }
 
-
-
     /**
-     * compileProject compiles a Maven project located in the specified repository directory.
+     * compileProject compiles a Maven project located in the specified repository
+     * directory.
      * This method uses the Maven build tool to execute the "clean install" command.
-     * The compilation is performed using a platform-independent approach, 
+     * The compilation is performed using a platform-independent approach,
      * allowing compatibility with both Windows and Unix-like operating systems.
      * 
-     * @param repoPath The path to the directory containing the Maven project to be compiled.
+     * @param repoPath The path to the directory containing the Maven project to be
+     *                 compiled.
      * @return true if the compilation is successful, false otherwise.
      */
     public boolean compileProject(Path repoPath) {
         int exitCode = 0;
         try {
             ProcessBuilder builder = new ProcessBuilder();
-            
+
             String os = System.getProperty("os.name").toLowerCase();
             if (os.contains("win")) {
                 builder.command("cmd", "/c", "mvn compile");
@@ -145,10 +150,10 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 builder.command("sh", "-c", "mvn compile");
             }
             builder.directory(repoPath.toFile());
-            
+
             Process process = builder.start();
             exitCode = process.waitFor();
-    
+
             if (exitCode != 0) {
                 System.err.println("Maven build failed with exit code: " + exitCode);
                 return false;
@@ -157,6 +162,53 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    /**
+     * Notify GitHub about the commit status using the GitHub Status API.
+     *
+     * @param repoUrl           The URL to the repository on GitHub.
+     * @param author            Author of the commit
+     * @param branch            The branch on which the commit status is set.
+     * @param commitId          SHA id for the commit
+     * @param compilationStatus The result of the compilation (true if successful,
+     *                          false otherwise).
+     * @param testStatus        The result of the tests (true if successful,
+     *                          false otherwise).
+     */
+    public void notifyGitHubCommitStatus(String repoUrl, String author, String branch, String commitId,
+            boolean compilationStatus,
+            boolean testStatus) {
+        try {
+            String[] parts = repoUrl.split("/");
+            String repoName = parts[parts.length - 1].replace(".git", "");
+
+            URL url = new URL("https://api.github.com/repos/" + author + "/" + repoName + "/statuses/" + commitId);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Authorization", "Bearer " + GITHUB_TOKEN);
+            connection.setRequestProperty("Content-Type", "application/json");
+
+            JSONObject jsonInputString = new JSONObject();
+            jsonInputString.put("state", compilationStatus && testStatus ? "success" : "failure");
+
+            String decription = compilationStatus ? "Build successful.\n" : "Build failed.\n";
+            decription += testStatus ? "Tests succesful." : "Tests failed";
+
+            jsonInputString.put("description", decription);
+
+            connection.setDoOutput(true);
+            connection.getOutputStream().write(jsonInputString.toString().getBytes("UTF-8"));
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == 201) {
+                System.out.println("GitHub commit status updated successfully:\n" + decription);
+            } else {
+                System.out.println("Failed to update GitHub commit status. Response code: " + responseCode);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
