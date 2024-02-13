@@ -53,17 +53,25 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     /**
      * this gets run every time github sends a request to our server. I.E. when
      * someone has made a commit to the remote repository. TODO: javadoc
+     * @throws IOException 
      */
     @Override
     public void handle(String target,
             Request baseRequest,
             HttpServletRequest request,
-            HttpServletResponse response) {
+            HttpServletResponse response) throws IOException {
 
         System.out.println("target: " + target);
 
         // TODO: maybe some check to see if the incoming request is from github webhooks
         // To avoid favicon http requests for example.
+
+        if(target.equals("/api/history")) {
+            response.setContentType("application/json;charset=utf-8");
+            HistoryHandler historyProcesser = new HistoryHandler("buildlogs/");
+            String builds = historyProcesser.builds();
+            response.getWriter().print(builds);
+        }
 
         try {
             // Clone
