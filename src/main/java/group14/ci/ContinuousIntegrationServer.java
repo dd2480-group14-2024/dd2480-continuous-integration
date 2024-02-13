@@ -64,11 +64,11 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         try {
             // Clone
             JSONObject payload = new JSONObject(new JSONTokener(request.getInputStream()));
+            System.out.println(payload.toString());
             String repoUrl = payload.getJSONObject("repository").getString("clone_url");
             String branch = payload.getString("ref");
-            String author = payload.getJSONObject("pusher").get("name").toString();
-            String commitId = payload.getJSONObject("head_commit").get("id").toString();
 
+            // Clone repository
             System.out.println("GitHub repo: " + repoUrl + " " + branch);
             Path repoPath = cloneRepository(repoUrl, branch);
             System.out.println("Temp directory: " + repoPath.toString());
@@ -81,7 +81,16 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             boolean testsSuccessful = true;
 
             // Notify
-            notifyGitHubCommitStatus(repoUrl, author, branch, commitId, compileSuccessful, testsSuccessful);
+            String owner = payload.getJSONObject("repository").getJSONObject("owner").get("login").toString(); // repository
+                                                                                                               // owner
+                                                                                                               // - also
+                                                                                                               // works
+                                                                                                               // for
+                                                                                                               // organizations
+            String commitId = payload.getJSONObject("head_commit").get("id").toString(); // SHA id of the commit that
+                                                                                         // triggered the webhook
+            notifyGitHubCommitStatus(repoUrl, owner, branch, commitId, compileSuccessful,
+                    testsSuccessful);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -206,6 +215,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 System.out.println("GitHub commit status updated successfully:\n" + decription);
             } else {
                 System.out.println("Failed to update GitHub commit status. Response code: " + responseCode);
+                System.out.println(url.toString());
             }
         } catch (IOException e) {
             e.printStackTrace();
