@@ -27,7 +27,7 @@ import org.json.JSONTokener;
 public class ContinuousIntegrationServer extends AbstractHandler {
 
     private static final int PORT = 8080;
-    private static final String GITHUB_TOKEN = "";
+    private static final String GITHUB_TOKEN = "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";
 
     /**
      * The main entry point for the Continuous Integration Server application. This
@@ -65,13 +65,51 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     public void handle(String target,
             Request baseRequest,
             HttpServletRequest request,
-            HttpServletResponse response) {
+            HttpServletResponse response) throws IOException {
 
         System.out.println("target: " + target);
 
-        // TODO: maybe some check to see if the incoming request is from github webhooks
-        // To avoid favicon http requests for example.
+        // Handle favicon requests
+        if (target.equals("/favicon.ico")) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            baseRequest.setHandled(true);
+            return;
+        }
 
+        HistoryHandler historyProcesser = new HistoryHandler("buildlogs/");
+
+        // Handles build history requests
+        if (target.equals("/api/history")) {
+            response.setContentType("application/json;charset=utf-8");
+            String builds = historyProcesser.builds();
+            response.getWriter().print(builds);
+
+            response.setContentType("text/html;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            baseRequest.setHandled(true);
+
+            return;
+        } else if (target.startsWith("/api/history/")) {
+            // Extract SHA_ID from the request URL
+            String shaID = target.substring("/api/history/".length());
+
+            // Retrieve and return the specific build log for the given SHA_ID
+            response.setContentType("application/json;charset=utf-8");
+            String specificBuild = historyProcesser.getBuild(shaID);
+
+            if (specificBuild != null) {
+                response.getWriter().print(specificBuild);
+                response.setContentType("text/html;charset=utf-8");
+                response.setStatus(HttpServletResponse.SC_OK);
+            } else {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            }
+
+            baseRequest.setHandled(true);
+            return;
+        }
+
+        // Handle GitHub webhook requests
         try {
             // Clone
             JSONObject payload = new JSONObject(new JSONTokener(request.getInputStream()));
@@ -97,6 +135,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             String commitId = payload.getJSONObject("head_commit").get("id").toString();
             notifyGitHubCommitStatus(repoUrl, owner, commitId, compileSuccessful,
                     testsSuccessful);
+
+            try {
+                historyProcesser.saveBuildInfo(commitId, compileSuccessful, testsSuccessful);
+                System.out.println("Saved build log succesfully");
+            } catch (IOException e) {
+                System.out.println("Faild to save build log");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -104,6 +149,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         response.setContentType("text/html;charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
+
         try {
             response.getWriter().println("CI job done");
         } catch (IOException ioe) {
