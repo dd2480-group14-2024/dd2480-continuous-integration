@@ -17,6 +17,15 @@ Tests can be executed through the ```mvn test``` command.
 Further instructions: [Smallest Java CI Repository](https://github.com/KTH-DD2480/smallest-java-ci)
 
 
+## Details of implementations and unit tests
+### Compilation
+
+### Testing
+
+### Notifications
+When a webhook request has passed through the compilation and testing the step the results are passed to the ```notifyGitHubCommitStatus```. This function uses the GitHub API to set the commit status of the commit that triggered the webhook according to the results of compilation and testing. Authentication is done through pasting your token into the file ```ContinuousIntegrationServer.java```.
+
+
 ## Contributions
 Jodie Ooi:
 Leo Vainio:
