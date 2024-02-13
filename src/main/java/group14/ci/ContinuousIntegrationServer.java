@@ -4,8 +4,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -89,7 +92,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                                                                                                                // organizations
             String commitId = payload.getJSONObject("head_commit").get("id").toString(); // SHA id of the commit that
                                                                                          // triggered the webhook
-            notifyGitHubCommitStatus(repoUrl, owner, branch, commitId, compileSuccessful,
+            notifyGitHubCommitStatus(repoUrl, owner, commitId, compileSuccessful,
                     testsSuccessful);
         } catch (Exception e) {
             e.printStackTrace();
@@ -178,47 +181,76 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * Notify GitHub about the commit status using the GitHub Status API.
      *
      * @param repoUrl           The URL to the repository on GitHub.
-     * @param author            Author of the commit
+     * @param owner             Owner of the repo
      * @param branch            The branch on which the commit status is set.
      * @param commitId          SHA id for the commit
      * @param compilationStatus The result of the compilation (true if successful,
      *                          false otherwise).
      * @param testStatus        The result of the tests (true if successful,
      *                          false otherwise).
+     * @throws FileNotFoundException
+     * @throws MalformedURLException
      */
-    public void notifyGitHubCommitStatus(String repoUrl, String author, String branch, String commitId,
+    public void notifyGitHubCommitStatus(String repoUrl, String owner, String commitId,
             boolean compilationStatus,
-            boolean testStatus) {
-        try {
-            String[] parts = repoUrl.split("/");
-            String repoName = parts[parts.length - 1].replace(".git", "");
+            boolean testStatus) throws FileNotFoundException, MalformedURLException {
+        // Open connection
+        HttpURLConnection connection = createConnection(repoUrl, owner, commitId);
 
-            URL url = new URL("https://api.github.com/repos/" + author + "/" + repoName + "/statuses/" + commitId);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        // Set header
+        try {
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Authorization", "Bearer " + GITHUB_TOKEN);
             connection.setRequestProperty("Content-Type", "application/json");
+        } catch (ProtocolException e) {
+            e.printStackTrace();
+        }
 
-            JSONObject jsonInputString = new JSONObject();
-            jsonInputString.put("state", compilationStatus && testStatus ? "success" : "failure");
+        // Build JSON object
+        JSONObject jsonInputString = new JSONObject();
+        jsonInputString.put("state", compilationStatus && testStatus ? "success" : "failure");
+        String decription = compilationStatus ? "Build successful.\n" : "Build failed.\n";
+        decription += testStatus ? "Tests succesful." : "Tests failed";
+        jsonInputString.put("description", decription);
 
-            String decription = compilationStatus ? "Build successful.\n" : "Build failed.\n";
-            decription += testStatus ? "Tests succesful." : "Tests failed";
-
-            jsonInputString.put("description", decription);
-
+        // Send request
+        int responseCode = 0;
+        try {
             connection.setDoOutput(true);
             connection.getOutputStream().write(jsonInputString.toString().getBytes("UTF-8"));
-
-            int responseCode = connection.getResponseCode();
-            if (responseCode == 201) {
-                System.out.println("GitHub commit status updated successfully:\n" + decription);
-            } else {
-                System.out.println("Failed to update GitHub commit status. Response code: " + responseCode);
-                System.out.println(url.toString());
-            }
+            responseCode = connection.getResponseCode();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        if (responseCode == 201) {
+            System.out.println("GitHub commit status updated successfully:\n" + decription);
+        } else {
+            throw new FileNotFoundException("Failed to update GitHub commit status. Response code: " + responseCode);
+        }
+    }
+
+    /**
+     * Create a connection to the API endpoint for setting commit statuses
+     * 
+     * @param repoUrl  URL of the repo
+     * @param owner    Owner of the repo
+     * @param commitId SHA id of the commit to set the status for
+     * @return A connection to the API endpoint for setting commit statuses
+     * @throws MalformedURLException
+     */
+    public HttpURLConnection createConnection(String repoUrl, String owner, String commitId)
+            throws MalformedURLException {
+        String[] parts = repoUrl.split("/");
+        String repoName = parts[parts.length - 1].replace(".git", "");
+        HttpURLConnection connection = null;
+        URL url = new URL("https://api.github.com/repos/" + owner + "/" + repoName + "/statuses/" + commitId);
+        try {
+            connection = (HttpURLConnection) url.openConnection();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return connection;
     }
 }
