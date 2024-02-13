@@ -24,6 +24,8 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+
+
 public class ContinuousIntegrationServer extends AbstractHandler {
 
     private static final int PORT = 8080;
@@ -87,8 +89,9 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             boolean compileSuccessful = compileProject(repoPath);
             System.out.println("compilation status: " + compileSuccessful);
 
+            
             // Tests
-            boolean testsSuccessful = true;
+            boolean testsSuccessful = TestRun.runTests();
 
             // Notify
             // Owner of the repository (could be an individual or an organisation)
