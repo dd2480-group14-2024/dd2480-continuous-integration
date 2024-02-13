@@ -26,9 +26,6 @@ public class HistoryHandler {
     public HistoryHandler(String buildLogPath) throws UnsupportedEncodingException, IOException {
         this.buildLogPath = buildLogPath;
 
-        JSONObject jBuilds = new JSONObject();
-        JSONArray jArray = new JSONArray();
-
         // Create the directory if it does not exist
         File directory = new File(buildLogPath);
         if (!directory.exists()) {
@@ -38,7 +35,19 @@ public class HistoryHandler {
                 System.err.println("Error: Unable to create directory");
             }
         }
+    }
 
+    /**
+     * 
+     * @return builds, the string containing the json representation of the build
+     *         logs
+     * @throws UnsupportedEncodingException if it encounters an unsupported encoding
+     * @throws IOException                  if an IO error occurs
+     */
+    public String builds() throws UnsupportedEncodingException, IOException {
+        JSONObject jBuilds = new JSONObject();
+        JSONArray jArray = new JSONArray();
+        File directory = new File(buildLogPath);
         File[] files = directory.listFiles();
 
         if (files != null) {
@@ -53,14 +62,7 @@ public class HistoryHandler {
         } else {
             System.err.println("Error: Directory not found");
         }
-    }
 
-    /**
-     * 
-     * @return builds, the string containing the json representation of the build
-     *         logs
-     */
-    public String builds() {
         return builds;
     }
 
