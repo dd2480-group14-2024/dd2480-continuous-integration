@@ -106,6 +106,10 @@ public class ContinuousIntegrationServerTest {
 
     }
 
+    /**
+     * When notifyGitHubCommitStatus receives an invalid url (such that it does not
+     * point to an actual repository) it should throw a FileNotFound exception
+     */
     @Test
     void testNotifyBadRepoUrl() {
         ContinuousIntegrationServer c = new ContinuousIntegrationServer();
@@ -119,6 +123,12 @@ public class ContinuousIntegrationServerTest {
         });
     }
 
+    /***
+     * notifyGitHubCommitStatus should not throw any exceptions when the arguments
+     * are valid and the Http connection return a 201 code (successful connection)
+     * 
+     * @throws IOException
+     */
     @Test
     void testNotifyGitHubCommitStatusSuccess() throws IOException {
         HttpURLConnection mockedConnection = mock(HttpURLConnection.class);

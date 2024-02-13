@@ -51,10 +51,15 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
 
     /**
-     * this gets run every time github sends a request to our server. I.E. when
-     * someone has made a commit to the remote repository. TODO: javadoc
-     * 
-     * @throws IOException
+     * This method is invoked every time a request is sent to our server, typically triggered
+     * when someone has made a commit to the remote repository. It handles the incoming webhook
+     * request, performs actions such as cloning the repository, compiling the project, and notifying
+     * GitHub about the status of the commit.
+     *
+     * @param target      The target of the request.
+     * @param baseRequest The base request object.
+     * @param request     The HttpServletRequest object representing the incoming request.
+     * @param response    The HttpServletResponse object representing the response to be sent.
      */
     @Override
     public void handle(String target,
@@ -124,14 +129,10 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             boolean testsSuccessful = true;
 
             // Notify
-            String owner = payload.getJSONObject("repository").getJSONObject("owner").get("login").toString(); // repository
-                                                                                                               // owner
-                                                                                                               // - also
-                                                                                                               // works
-                                                                                                               // for
-                                                                                                               // organizations
-            String commitId = payload.getJSONObject("head_commit").get("id").toString(); // SHA id of the commit that
-                                                                                         // triggered the webhook
+            // Owner of the repository (could be an individual or an organisation)
+            String owner = payload.getJSONObject("repository").getJSONObject("owner").get("login").toString();
+            // SHA id of the commit that triggered the webhook
+            String commitId = payload.getJSONObject("head_commit").get("id").toString();
             notifyGitHubCommitStatus(repoUrl, owner, commitId, compileSuccessful,
                     testsSuccessful);
 

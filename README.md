@@ -18,7 +18,9 @@ Further instructions: [Smallest Java CI Repository](https://github.com/KTH-DD248
 
 
 ## Details of implementations and unit tests
+
 ### Compilation
+Github webhooks sends a POST request to our server when someone has made a commit to the remote repository. The server then clones the branch that has been commited to into a temporary folder. The ```compileProject``` function then runs the ```mvn compile``` command in the temporary folder. If no exceptions are thrown and if the exit code of the process is 0, compilation is deemed successful, otherwise not. Testing that the compilation works was done by creating a small mock maven project and running the function on it. We checked that the function returned true, signalling a success, and also that the target folder that maven generates exist after compilation.
 
 ### Testing
 
@@ -28,9 +30,13 @@ When a webhook request has passed through the compilation and testing the step t
 
 ## Contributions
 Jodie Ooi:
+
 Leo Vainio:
+
 Luna Ji Chen:
+
 Teodor Morfeldt Gadler: Wrote function and tests for notifications. Contributed to readme.
+
 William Carl Vitalis Nordwall:
 
 
