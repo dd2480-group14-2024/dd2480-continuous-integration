@@ -35,7 +35,10 @@ Leo Vainio:
 
 Luna Ji Chen:
 
-Teodor Morfeldt Gadler: Wrote function and tests for notifications. Contributed to readme.
+Teodor Morfeldt Gadler: 
+- Wrote function and tests for notifications.
+- Contributed to readme/essence analysis
+- Wrote tests and parts of the functionality for saving build logs
 
 William Carl Vitalis Nordwall:
 
