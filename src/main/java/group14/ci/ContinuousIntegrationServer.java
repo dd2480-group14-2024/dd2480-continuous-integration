@@ -27,7 +27,7 @@ import org.json.JSONTokener;
 public class ContinuousIntegrationServer extends AbstractHandler {
 
     private static final int PORT = 8080;
-    private static final String GITHUB_TOKEN = "";
+    private static final String GITHUB_TOKEN = "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";
 
     /**
      * The main entry point for the Continuous Integration Server application. This
@@ -68,7 +68,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         try {
             // Clone
             JSONObject payload = new JSONObject(new JSONTokener(request.getInputStream()));
-            System.out.println(payload.toString());
             String repoUrl = payload.getJSONObject("repository").getString("clone_url");
             String branch = payload.getString("ref");
 
@@ -85,14 +84,10 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             boolean testsSuccessful = true;
 
             // Notify
-            String owner = payload.getJSONObject("repository").getJSONObject("owner").get("login").toString(); // repository
-                                                                                                               // owner
-                                                                                                               // - also
-                                                                                                               // works
-                                                                                                               // for
-                                                                                                               // organizations
-            String commitId = payload.getJSONObject("head_commit").get("id").toString(); // SHA id of the commit that
-                                                                                         // triggered the webhook
+            // Owner of the repository (could be an individual or an organisation)
+            String owner = payload.getJSONObject("repository").getJSONObject("owner").get("login").toString(); ¨
+            // SHA id of the commit that triggered the webhook
+            String commitId = payload.getJSONObject("head_commit").get("id").toString(); 
             notifyGitHubCommitStatus(repoUrl, owner, commitId, compileSuccessful,
                     testsSuccessful);
         } catch (Exception e) {
