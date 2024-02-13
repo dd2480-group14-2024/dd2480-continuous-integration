@@ -12,6 +12,8 @@ This repo contains a basic continuous integration (CI) server made for the cours
    ```ngrok http 8080```
 5. Paste the URL provided by ngrok into the webhook section of your repo. Make sure to select the JSON format.
 
+Tests can be executed through the ```mvn test``` command.
+
 Further instructions: [Smallest Java CI Repository](https://github.com/KTH-DD2480/smallest-java-ci)
 
 
