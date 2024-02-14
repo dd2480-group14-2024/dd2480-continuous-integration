@@ -23,14 +23,14 @@ Further instructions: [Smallest Java CI Repository](https://github.com/KTH-DD248
 Github webhooks sends a POST request to our server when someone has made a commit to the remote repository. The server then clones the branch that has been commited to into a temporary folder. The ```compileProject``` function then runs the ```mvn compile``` command in the temporary folder. If no exceptions are thrown and if the exit code of the process is 0, compilation is deemed successful, otherwise not. Testing that the compilation works was done by creating a small mock maven project and running the function on it. We checked that the function returned true, signalling a success, and also that the target folder that maven generates exist after compilation.
 
 ### Testing
-Triggering Tests: Testing is initiated via GitHub webhooks. Pushing changes to the "assessment" branch in the repository prompts the CI server to automatically execute associated tests. Upon webhook receipt, the CI server extracts repository details, clones, compiles, and runs tests specific to the committed branch. This process ensures changes do not compromise the projects integrity. Created assessment branch and pushed changes for testing, checking CI server log.
+Triggering Tests: Testing is initiated via GitHub webhooks. Pushing changes to the "assessment" branch in the repository prompts the CI server to automatically execute associated tests. Upon webhook receipt, the CI server extracts repository details, clones, compiles, and runs tests specific to the committed branch. This process ensures changes do not compromise the projects integrity. Testing was done by creating assessment branch and pushed changes for testing, checking CI server log.
 
 ### Notifications
 When a webhook request has passed through the compilation and testing the step the results are passed to the ```notifyGitHubCommitStatus```. This function uses the GitHub API to set the commit status of the commit that triggered the webhook according to the results of compilation and testing. Authentication is done through pasting your token into the file ```ContinuousIntegrationServer.java```.
 
 
 ## Contributions
-Jodie Ooi: Automated testing for ContinuousIntegrationServerTests triggered as webhook. Documentation on testing.
+Jodie Ooi: Automated testing for ContinuousIntegrationServerTests triggered as webhook. Contributed to readme on testing documentation.
 
 Leo Vainio:
 
