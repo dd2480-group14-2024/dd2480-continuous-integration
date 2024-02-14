@@ -113,6 +113,7 @@ public class HistoryHandlerTest {
      * @throws UnsupportedEncodingException from history handler initializaiton
      * @throws IOException                  from history handler initializaiton
      */
+    @Test
     void getBuildReturnsDesiredLogTest() throws IOException {
         HistoryHandler h = new HistoryHandler(testPath);
 
