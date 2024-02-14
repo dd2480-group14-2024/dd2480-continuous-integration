@@ -32,7 +32,9 @@ When a webhook request has passed through the compilation and testing the step t
 
 
 ## Contributions
-Jodie Ooi: Automated testing for ContinuousIntegrationServerTests triggered as webhook. Contributed to readme on testing documentation.
+Jodie Ooi: 
+- Worked on testProject function
+- Contributed to readme on testing documentation.
 
 Leo Vainio:
 - Wrote the cloneProject function
