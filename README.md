@@ -41,6 +41,8 @@ Leo Vainio:
 - Set up the repository, organisation and dependencies for the project
 
 Luna Ji Chen:
+- Wrote tests for cloneProject and compileProject function
+- Worked on setting up the repository for the project
 
 Teodor Morfeldt Gadler: 
 - Wrote function and tests for notifications.
