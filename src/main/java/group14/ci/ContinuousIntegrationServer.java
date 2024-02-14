@@ -27,7 +27,7 @@ import org.json.JSONTokener;
 public class ContinuousIntegrationServer extends AbstractHandler {
 
     private static final int PORT = 8080;
-    private static final String GITHUB_TOKEN = "";
+    private static final String GITHUB_TOKEN = "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";
 
     /**
      * The main entry point for the Continuous Integration Server application. This
@@ -88,7 +88,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             System.out.println("compilation status: " + compileSuccessful);
 
             // Tests
-            boolean testsSuccessful = group14.ci.TestRunner.runTests();
+            boolean testsSuccessful = testProject(repoPath);
 
             // Notify
             // Owner of the repository (could be an individual or an organisation)
@@ -145,7 +145,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     /**
      * compileProject compiles a Maven project located in the specified repository
      * directory.
-     * This method uses the Maven build tool to execute the "clean install" command.
+     * This method uses the Maven build tool to execute the "mvn compile" command.
      * The compilation is performed using a platform-independent approach,
      * allowing compatibility with both Windows and Unix-like operating systems.
      * 
@@ -171,6 +171,44 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
             if (exitCode != 0) {
                 System.err.println("Maven build failed with exit code: " + exitCode);
+                return false;
+            }
+            return true;
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+     /**
+     * testProject tests a Maven project located in the specified repository
+     * directory.
+     * This method uses the Maven build tool to execute the "mvn test" command.
+     * 
+     * @param repoPath The path to the directory containing the Maven project to be
+     *                 compiled.
+     * @return true if the compilation is successful, false otherwise.
+     */
+    public boolean testProject(Path repoPath) {
+        int exitCode = 0;
+        try {
+            ProcessBuilder builder = new ProcessBuilder();
+
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("win")) {
+                builder.command("cmd", "/c", "mvn test");
+            } else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+                builder.command("sh", "-c", "mvn test");
+            }
+            builder.directory(repoPath.toFile());
+
+            Process process = builder.start();
+            exitCode = process.waitFor();
+
+            System.out.println("testing: code:, " + exitCode);
+
+            if (exitCode != 0) {
+                System.err.println("Maven test failed with exit code: " + exitCode);
                 return false;
             }
             return true;
