@@ -106,4 +106,4 @@ William Carl Vitalis Nordwall:
 | [-] The team members are available for assignment to other teams.         |
 | [-] No further effort is being put in by the team to complete the mission |
 
-The team is somewhere around the performing stage. We have established a model that works well for us and have let us achieve all parts of the performing stage to some degree. However, some criterias, even from earlier levels, could be more well defined. For example we have not defined a leadership model, but so far we make due with ad hoc democratic decisions...
+The team is somewhere around the performing stage. We have established a model that works well for us and have let us achieve all parts of the performing stage to some degree. However, some criterias, even from earlier levels, could be more well defined. For example we have not defined a leadership model, but so far we make due with ad hoc democratic decisions..
