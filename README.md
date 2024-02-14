@@ -14,6 +14,8 @@ This repo contains a basic continuous integration (CI) server made for the cours
 
 Tests can be executed through the ```mvn test``` command.
 
+Javadoc can be generated with mvn javadoc:javadoc.
+
 Further instructions: [Smallest Java CI Repository](https://github.com/KTH-DD2480/smallest-java-ci)
 
 

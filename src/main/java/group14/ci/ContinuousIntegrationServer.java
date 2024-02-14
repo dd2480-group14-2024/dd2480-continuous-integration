@@ -2,7 +2,6 @@ package group14.ci;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -15,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -24,6 +22,13 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+/**
+ * The ContinuousIntegrationServer class is a Jetty server handler that
+ * implements continuous integration functionality. It listens for incoming
+ * webhook requests triggered by events such as commits to a remote repository,
+ * and performs actions such as cloning the repository, compiling the project,
+ * and notifying GitHub about the status of the commit.
+ */
 public class ContinuousIntegrationServer extends AbstractHandler {
 
     private static final int PORT = 8080;
@@ -42,7 +47,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         server.setHandler(new ContinuousIntegrationServer());
         try {
             server.start();
-            System.out.println("Server started successfully. Listening on port 8080.");
+            System.out.println("Server started successfully. Listening on port " + PORT + ".");
             server.join();
         } catch (Exception e) {
             e.printStackTrace();
@@ -109,7 +114,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             return;
         }
 
-        // Handle GitHub webhook requests
         try {
             // Clone
             JSONObject payload = new JSONObject(new JSONTokener(request.getInputStream()));
@@ -231,7 +235,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      *
      * @param repoUrl           The URL to the repository on GitHub.
      * @param owner             Owner of the repo
-     * @param branch            The branch on which the commit status is set.
      * @param commitId          SHA id for the commit
      * @param compilationStatus The result of the compilation (true if successful,
      *                          false otherwise).
@@ -286,7 +289,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @param owner    Owner of the repo
      * @param commitId SHA id of the commit to set the status for
      * @return A connection to the API endpoint for setting commit statuses
-     * @throws MalformedURLException
+     * @throws MalformedURLException if URL is malfored
      */
     public HttpURLConnection createConnection(String repoUrl, String owner, String commitId)
             throws MalformedURLException {
