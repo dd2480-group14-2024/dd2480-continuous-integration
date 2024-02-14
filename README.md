@@ -35,6 +35,10 @@ When a webhook request has passed through the compilation and testing the step t
 Jodie Ooi: Automated testing for ContinuousIntegrationServerTests triggered as webhook. Contributed to readme on testing documentation.
 
 Leo Vainio:
+- Wrote the cloneProject function
+- Wrote the compileProject function
+- Wrote the testProject function
+- Set up the repository, organisation and dependencies for the project
 
 Luna Ji Chen:
 
