@@ -2,7 +2,6 @@ package group14.ci;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -15,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -24,10 +22,17 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+/**
+ * The ContinuousIntegrationServer class is a Jetty server handler that
+ * implements continuous integration functionality. It listens for incoming
+ * webhook requests triggered by events such as commits to a remote repository,
+ * and performs actions such as cloning the repository, compiling the project,
+ * and notifying GitHub about the status of the commit.
+ */
 public class ContinuousIntegrationServer extends AbstractHandler {
 
     private static final int PORT = 8080;
-    private static final String GITHUB_TOKEN = "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";
+    private static final String GITHUB_TOKEN = "";
 
     /**
      * The main entry point for the Continuous Integration Server application. This
@@ -42,7 +47,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         server.setHandler(new ContinuousIntegrationServer());
         try {
             server.start();
-            System.out.println("Server started successfully. Listening on port 8080.");
+            System.out.println("Server started successfully. Listening on port " + PORT + ".");
             server.join();
         } catch (Exception e) {
             e.printStackTrace();
@@ -65,12 +70,49 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     public void handle(String target,
             Request baseRequest,
             HttpServletRequest request,
-            HttpServletResponse response) {
+            HttpServletResponse response) throws IOException {
 
         System.out.println("target: " + target);
 
-        // TODO: maybe some check to see if the incoming request is from github webhooks
-        // To avoid favicon http requests for example.
+        // Handle favicon requests
+        if (target.equals("/favicon.ico")) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            baseRequest.setHandled(true);
+            return;
+        }
+
+        HistoryHandler historyProcesser = new HistoryHandler("buildlogs/");
+
+        // Handles build history requests
+        if (target.equals("/api/history")) {
+            response.setContentType("application/json;charset=utf-8");
+            String builds = historyProcesser.builds();
+            response.getWriter().print(builds);
+
+            response.setContentType("text/html;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            baseRequest.setHandled(true);
+
+            return;
+        } else if (target.startsWith("/api/history/")) {
+            // Extract SHA_ID from the request URL
+            String shaID = target.substring("/api/history/".length());
+
+            // Retrieve and return the specific build log for the given SHA_ID
+            response.setContentType("application/json;charset=utf-8");
+            String specificBuild = historyProcesser.getBuild(shaID);
+
+            if (specificBuild != null) {
+                response.getWriter().print(specificBuild);
+                response.setContentType("text/html;charset=utf-8");
+                response.setStatus(HttpServletResponse.SC_OK);
+            } else {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            }
+
+            baseRequest.setHandled(true);
+            return;
+        }
 
         try {
             // Clone
@@ -97,6 +139,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             String commitId = payload.getJSONObject("head_commit").get("id").toString();
             notifyGitHubCommitStatus(repoUrl, owner, commitId, compileSuccessful,
                     testsSuccessful);
+
+            try {
+                historyProcesser.saveBuildInfo(commitId, compileSuccessful, testsSuccessful);
+                System.out.println("Saved build log succesfully");
+            } catch (IOException e) {
+                System.out.println("Faild to save build log");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -104,6 +153,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         response.setContentType("text/html;charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
+
         try {
             response.getWriter().println("CI job done");
         } catch (IOException ioe) {
@@ -223,7 +273,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      *
      * @param repoUrl           The URL to the repository on GitHub.
      * @param owner             Owner of the repo
-     * @param branch            The branch on which the commit status is set.
      * @param commitId          SHA id for the commit
      * @param compilationStatus The result of the compilation (true if successful,
      *                          false otherwise).
@@ -278,7 +327,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @param owner    Owner of the repo
      * @param commitId SHA id of the commit to set the status for
      * @return A connection to the API endpoint for setting commit statuses
-     * @throws MalformedURLException
+     * @throws MalformedURLException if URL is malfored
      */
     public HttpURLConnection createConnection(String repoUrl, String owner, String commitId)
             throws MalformedURLException {
