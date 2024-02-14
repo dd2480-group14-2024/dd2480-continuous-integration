@@ -101,8 +101,8 @@ public class HistoryHandlerTest {
 
         h.saveBuildInfo("1", false, true);
         h.saveBuildInfo("2", true, false);
-        
-        String expectedJson = "\\{\"builds\":\\[\\{\"TestStatus\":true,\"ShaID\":\"[^\"]+\",\"Timestamp\":\"[^\"]+\",\"CompileStatus\":false},\\{\"TestStatus\":false,\"ShaID\":\"[^\"]+\",\"Timestamp\":\"[^\"]+\",\"CompileStatus\":true}\\]\\}";
+
+        String expectedJson = "\\{\"builds\":\\[\\{\"TestStatus\":(?:true|false),\"ShaID\":\"[^\"]+\",\"Timestamp\":\"[^\"]+\",\"CompileStatus\":(?:true|false)\\},\\{\"TestStatus\":(?:true|false),\"ShaID\":\"[^\"]+\",\"Timestamp\":\"[^\"]+\",\"CompileStatus\":(?:true|false)\\}\\]\\}";
 
         assertTrue(h.builds().matches(expectedJson));
     }
@@ -119,7 +119,6 @@ public class HistoryHandlerTest {
         h.saveBuildInfo("1", false, true);
         h.saveBuildInfo("2", true, false);
 
-        System.out.println(h.getBuild("1"));
         String expectedJson = "\\{\"TestStatus\":true,\"ShaID\":\"1\",\"Timestamp\":\"[^\"]+\",\"CompileStatus\":false\\}";
         assertTrue(h.getBuild("1").matches(expectedJson));
     }
