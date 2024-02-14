@@ -48,6 +48,7 @@ Teodor Morfeldt Gadler:
 - Wrote tests and parts of the functionality for saving build logs
 
 William Carl Vitalis Nordwall:
+- Wrote function for maintaining history of builds
 
 
 ## Essence Standard
