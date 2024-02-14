@@ -106,6 +106,19 @@ public class ContinuousIntegrationServerTest {
 
     }
 
+    @Test
+    public void testTestProject(@TempDir Path tempDir) throws Exception {
+        ContinuousIntegrationServer server = new ContinuousIntegrationServer();
+
+        Path resourceDirectory = Paths.get("src/test/java/group14/ci/sampleMavenProject");
+        copyFolder(resourceDirectory, tempDir);
+
+        // Use the tempDir with the copied Maven project for testing
+        boolean compileResult = server.testProject(tempDir);
+
+        assertTrue(compileResult, "The project should compile successfully.");
+    }
+
     /**
      * When notifyGitHubCommitStatus receives an invalid url (such that it does not
      * point to an actual repository) it should throw a FileNotFound exception
