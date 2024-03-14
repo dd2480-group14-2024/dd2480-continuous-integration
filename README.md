@@ -1,6 +1,6 @@
 # DD2480 Continuous Integration
 This repo contains a basic continuous integration (CI) server made for the course DD2480 at KTH. The server supports compiling and testing Java Maven projects. It can also update the commit status of your repo.
-
+ 
 
 ## Setup 
 1. Make sure that you have Java, Maven and ngrok installed.
