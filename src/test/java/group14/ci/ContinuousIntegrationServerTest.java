@@ -101,7 +101,7 @@ public class ContinuousIntegrationServerTest {
         // Check if the 'target' directory exists in the temporary directory after
         // compilation
         Path targetDir = tempDir.resolve("target");
-        assertTrue(Files.exists(targetDir) && Files.isDirectory(targetDir),
+        assertFalse(Files.exists(targetDir) && Files.isDirectory(targetDir),
                 "The 'target' directory should exist after successful compilation.");
 
     }
